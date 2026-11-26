@@ -1,0 +1,5 @@
+# dsh-fish-ears bundle patch
+- insert:
+    - id: fish-ears
+      name: dsh-fish-ears
+      config: {}

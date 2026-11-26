@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "title": "小鱼耳朵",
+    "description": "本地优先的语音转写：离线识别、云端多模态兜底、B 站视频音轨、本机 HTTP 接口。",
+    "detail": "docs/DETAIL.md"
+  },
+  "settings": {
+    "mode": "引擎模式",
+    "tier": "本地模型强度",
+    "modelDir": "模型目录",
+    "autoDownload": "自动下载模型",
+    "ffmpegPath": "ffmpeg 路径",
+    "serverEnabled": "开启本机服务",
+    "serverPort": "本机服务端口",
+    "cloudBaseUrl": "云端 Base URL",
+    "cloudApiKey": "云端 API Key",
+    "cloudModel": "云端模型名",
+    "cloudAllowUpload": "允许上传音频",
+    "cloudOnUnderstand": "需要理解时交给云端",
+    "cloudLongAudioSec": "长音频交给云端（秒）",
+    "cloudMinChars": "本地结果太短时问云端（字）",
+    "cloudFallbackLocal": "云端失败回退本地",
+    "biliCookie": "B站 Cookie",
+    "quotaEnabled": "开启额度管理",
+    "quotaDailyCalls": "每天调用上限",
+    "quotaDailySeconds": "每天音频秒数上限",
+    "quotaOnExceed": "额度用尽后"
+  }
+}

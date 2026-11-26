@@ -1,0 +1,29 @@
+{
+  "meta": {
+    "title": "Fish Ears",
+    "description": "Local-first speech transcription with cloud fallback, Bilibili audio, and a local HTTP API.",
+    "detail": "docs/DETAIL.md"
+  },
+  "settings": {
+    "mode": "Engine mode",
+    "tier": "Local model strength",
+    "modelDir": "Model directory",
+    "autoDownload": "Download models automatically",
+    "ffmpegPath": "ffmpeg path",
+    "serverEnabled": "Enable local service",
+    "serverPort": "Local service port",
+    "cloudBaseUrl": "Cloud base URL",
+    "cloudApiKey": "Cloud API key",
+    "cloudModel": "Cloud model name",
+    "cloudAllowUpload": "Allow audio upload",
+    "cloudOnUnderstand": "Send understanding tasks to cloud",
+    "cloudLongAudioSec": "Long audio goes to cloud (seconds)",
+    "cloudMinChars": "Ask cloud when local text is shorter than (characters)",
+    "cloudFallbackLocal": "Fall back to local when cloud fails",
+    "biliCookie": "Bilibili cookie",
+    "quotaEnabled": "Enable quota",
+    "quotaDailyCalls": "Daily call limit",
+    "quotaDailySeconds": "Daily audio seconds limit",
+    "quotaOnExceed": "When quota runs out"
+  }
+}
