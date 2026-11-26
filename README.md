@@ -2,6 +2,27 @@
 
 本地优先的语音转写插件：离线识别、云端多模态兜底、B 站视频音轨、本机 HTTP 接口。
 
+- 本地引擎：sherpa-onnx + SenseVoice / Paraformer，三档可选（82MB / 228MB / 232MB）
+- 云端兜底：火山方舟音频理解（Ark Seed）或任意 OpenAI 兼容 `/audio/transcriptions`
+- 路由：本地先听，听不出 / 要理解 / 超长音频才交云端，云端失败回落本地
+- 没有本地模型也能用：装好直接填云端 Key 即可
+
+## 安装
+
+```bash
+git clone https://github.com/751969653/dsh-fish-ears.git
+cd dsh-fish-ears
+npm install          # 只装 sherpa-onnx-node 与 schemastery
+```
+
+然后在 DSH 里把目录装成 bundle：
+
+```
+plugin_manager install_bundle "<仓库目录的绝对路径>"
+```
+
+重启 DSH，设置里会多出一页「小鱼耳朵」。首次转写时按所选档位下载模型（走 `hf-mirror.com`，也可手动指定本地模型目录）。
+
 ## 用法
 
 ```
