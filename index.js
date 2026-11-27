@@ -259,6 +259,66 @@ export function apply(ctx, config) {
     return { text: fix(out.text), engine: `cloud:${cfg.cloudModel}`, usage: out.usage }
   }
 
+  // 实测：196 秒的 wav 一次性上传，上游会 422（base64 被当文本计价，直接超过上下文上限）。
+  // 所以云端一律按 CLOUD_CHUNK_SEC 切段送；转写全拼，理解只取「开头 + 中间」两段（整首听完又贵又超限）。
+  const CLOUD_CHUNK_SEC = 45
+  const CLOUD_MAX_CHUNKS = 6
+
+  function sliceSamples(samples, fromSec, toSec) {
+    const a = Math.max(0, Math.floor(fromSec * 16000))
+    const b = Math.min(samples.length, Math.ceil(toSec * 16000))
+    return samples.subarray(a, b)
+  }
+
+  function mergeUsage(a, b) {
+    if (!b) return a
+    if (!a) return { ...b }
+    return {
+      input: (a.input ?? 0) + (b.input ?? 0),
+      output: (a.output ?? 0) + (b.output ?? 0),
+      total: (a.total ?? 0) + (b.total ?? 0),
+      audio: (a.audio ?? 0) + (b.audio ?? 0),
+      cached: (a.cached ?? 0) + (b.cached ?? 0),
+    }
+  }
+
+  /** 云端入口：短的直接送，长的切段。 */
+  async function runCloudAudio(samples, { need = 'text', prompt } = {}) {
+    const total = samples.length / 16000
+    if (total <= CLOUD_CHUNK_SEC) {
+      return runCloud(encodeWav16k(samples), { need, prompt, dur: total })
+    }
+    const windows = []
+    if (need === 'understand') {
+      windows.push([0, CLOUD_CHUNK_SEC])
+      if (total > CLOUD_CHUNK_SEC * 2) {
+        const start = Math.floor((total - CLOUD_CHUNK_SEC) / 2)
+        windows.push([start, start + CLOUD_CHUNK_SEC])
+      }
+    } else {
+      for (let t = 0; t < total && windows.length < CLOUD_MAX_CHUNKS; t += CLOUD_CHUNK_SEC) {
+        windows.push([t, Math.min(t + CLOUD_CHUNK_SEC, total)])
+      }
+    }
+    const parts = []
+    let usage = null
+    let engine = `cloud:${cfg.cloudModel}`
+    for (const [a, b] of windows) {
+      const piece = encodeWav16k(sliceSamples(samples, a, b))
+      const out = await runCloud(piece, { need, prompt, dur: b - a })
+      if (out.text) parts.push(out.text)
+      engine = out.engine || engine
+      usage = mergeUsage(usage, out.usage)
+    }
+    return {
+      text: need === 'understand' ? parts.join('\n') : parts.join(''),
+      engine,
+      usage,
+      chunks: windows.length,
+      understanding: need === 'understand',
+    }
+  }
+
   /**
    * Route one piece of audio: local engine, cloud omni, or local then cloud.
    * `need` is 'text' for a plain transcript and 'understand' when the caller
@@ -298,7 +358,7 @@ export function apply(ctx, config) {
 
     if (route === 'cloud') {
       try {
-        const out = await runCloud(wav, { need, prompt, dur })
+        const out = await runCloudAudio(samples, { need, prompt })
         await quota.spend(dur, out.usage)
         return { ...out, dur, ms: Date.now() - started, route: 'cloud' }
       } catch (error) {
@@ -318,7 +378,7 @@ export function apply(ctx, config) {
       const spend = quota.check(dur)
       if (spend.ok) {
         try {
-          const cloudOut = await runCloud(wav, { need: 'text', dur })
+          const cloudOut = await runCloudAudio(samples, { need: 'text' })
           if (String(cloudOut.text ?? '').trim()) {
             await quota.spend(dur, cloudOut.usage)
             return { ...cloudOut, dur, ms: Date.now() - started, route: 'cloud', localText: out.text }
