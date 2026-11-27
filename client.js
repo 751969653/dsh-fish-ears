@@ -52,20 +52,24 @@ window.__ModuleLoader__.load({
       return String(v)
     }
 
-    function Switch({ on, onChange }) {
+    const dim = (disabled) => (disabled ? { opacity: 0.45, cursor: 'not-allowed' } : null)
+
+    function Switch({ on, onChange, disabled }) {
       return h(
         'button',
         {
           type: 'button',
           role: 'switch',
           'aria-checked': !!on,
-          onClick: () => onChange(!on),
+          disabled: !!disabled,
+          onClick: () => { if (!disabled) onChange(!on) },
           style: {
             width: 40,
             height: 23,
             borderRadius: 999,
             border: 0,
-            cursor: 'pointer',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.45 : 1,
             position: 'relative',
             background: on ? 'var(--dsw-alias-accent-1, #2f6df6)' : 'rgba(0,0,0,.18)',
           },
@@ -85,28 +89,30 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function Text({ value, onSave, placeholder, type }) {
+    function Text({ value, onSave, placeholder, type, disabled }) {
       const [draft, setDraft] = React.useState(value ?? '')
       React.useEffect(() => setDraft(value ?? ''), [value])
       return h('input', {
         type: type || 'text',
         value: draft,
         placeholder: placeholder || '',
+        disabled: !!disabled,
         onChange: (e) => setDraft(e.target.value),
         onBlur: () => {
-          if (draft !== (value ?? '')) onSave(draft)
+          if (!disabled && draft !== (value ?? '')) onSave(draft)
         },
-        style: inputStyle,
+        style: { ...inputStyle, ...dim(disabled) },
       })
     }
 
-    function Select({ value, options, onSave }) {
+    function Select({ value, options, onSave, disabled }) {
       return h(
         'select',
         {
           value: value ?? '',
-          onChange: (e) => onSave(e.target.value),
-          style: { ...inputStyle, width: 180 },
+          disabled: !!disabled,
+          onChange: (e) => { if (!disabled) onSave(e.target.value) },
+          style: { ...inputStyle, width: 180, ...dim(disabled) },
         },
         options.map((opt) => h('option', { key: opt.value, value: opt.value }, opt.label)),
       )
@@ -178,6 +184,7 @@ window.__ModuleLoader__.load({
         : `${st?.local?.label || cfg.tier}（还没下载）`
       const cloudLabel = st?.cloud?.configured ? `${st.cloud.model || '已配置'}` : '没配'
       const quota = st?.quota || {}
+      const cloudOnly = cfg.mode === 'cloud'
 
       return h(
         'div',
@@ -219,6 +226,7 @@ window.__ModuleLoader__.load({
             h('span', { style: labelStyle }, '本地模型强度'),
             h(Select, {
               value: cfg.tier,
+              disabled: cloudOnly,
               options: (state.models?.tiers || [
                 { tier: 'low', label: '低 · Paraformer 小' },
                 { tier: 'mid', label: '中 · SenseVoice Small' },
@@ -227,6 +235,10 @@ window.__ModuleLoader__.load({
               onSave: (v) => patch({ tier: v }),
             }),
           ),
+          cloudOnly
+            ? h('p', { style: { ...labelStyle, margin: '2px 0 0', fontSize: 12.5, lineHeight: 1.6 } },
+                '只用云端时不加载本地模型，这几项先灰着；哪天切回「本地优先」或「只用本地」，它们会自己亮起来，之前选的档位还在。')
+            : null,
           h(
             'div',
             { style: { ...rowStyle, justifyContent: 'flex-end', gap: 10 } },
@@ -236,15 +248,16 @@ window.__ModuleLoader__.load({
                   'button',
                   {
                     type: 'button',
-                    onClick: () => download(cfg.tier),
+                    disabled: cloudOnly,
+                    onClick: () => { if (!cloudOnly) download(cfg.tier) },
                     style: {
                       padding: '7px 14px',
                       borderRadius: 8,
                       fontSize: 13,
                       border: '1px solid transparent',
-                      background: 'var(--dsw-alias-accent-1, #2f6df6)',
-                      color: '#fff',
-                      cursor: 'pointer',
+                      background: cloudOnly ? 'rgba(0,0,0,.12)' : 'var(--dsw-alias-accent-1, #2f6df6)',
+                      color: cloudOnly ? 'rgba(0,0,0,.35)' : '#fff',
+                      cursor: cloudOnly ? 'not-allowed' : 'pointer',
                     },
                   },
                   '下载 / 检查当前档位模型',
@@ -254,13 +267,18 @@ window.__ModuleLoader__.load({
             'div',
             { style: rowStyle },
             h('span', { style: labelStyle }, '模型目录'),
-            h(Text, { value: cfg.modelDir, placeholder: '留空 = ~/.dsh/fish-ears/models', onSave: (v) => patch({ modelDir: v }) }),
+            h(Text, {
+              value: cfg.modelDir,
+              disabled: cloudOnly,
+              placeholder: '留空 = ~/.dsh/fish-ears/models',
+              onSave: (v) => patch({ modelDir: v }),
+            }),
           ),
           h(
             'div',
             { style: rowStyle },
             h('span', { style: labelStyle }, '自动下载模型'),
-            h(Switch, { on: cfg.autoDownload !== false, onChange: (v) => patch({ autoDownload: v }) }),
+            h(Switch, { on: cfg.autoDownload !== false, disabled: cloudOnly, onChange: (v) => patch({ autoDownload: v }) }),
           ),
           h(
             'div',
