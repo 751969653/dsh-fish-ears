@@ -252,11 +252,11 @@ export function apply(ctx, config) {
       fast: cfg.cloudFast !== false,
     }
     if (need === 'understand') {
-      const text = await cloudUnderstand({ ...base, wav, prompt: prompt || DEFAULT_UNDERSTAND_PROMPT, thinking: cfg.cloudThink === true })
-      return { text: fix(text), engine: `cloud:${cfg.cloudModel}`, understanding: true }
+      const out = await cloudUnderstand({ ...base, wav, prompt: prompt || DEFAULT_UNDERSTAND_PROMPT, thinking: cfg.cloudThink === true })
+      return { text: fix(out.text), engine: `cloud:${cfg.cloudModel}`, understanding: true, usage: out.usage }
     }
-    const text = await cloudTranscribe({ ...base, wav })
-    return { text: fix(text), engine: `cloud:${cfg.cloudModel}` }
+    const out = await cloudTranscribe({ ...base, wav })
+    return { text: fix(out.text), engine: `cloud:${cfg.cloudModel}`, usage: out.usage }
   }
 
   /**
@@ -299,7 +299,7 @@ export function apply(ctx, config) {
     if (route === 'cloud') {
       try {
         const out = await runCloud(wav, { need, prompt, dur })
-        await quota.spend(dur)
+        await quota.spend(dur, out.usage)
         return { ...out, dur, ms: Date.now() - started, route: 'cloud' }
       } catch (error) {
         if (cfg.cloudFallbackLocal === false) throw error
@@ -320,7 +320,7 @@ export function apply(ctx, config) {
         try {
           const cloudOut = await runCloud(wav, { need: 'text', dur })
           if (String(cloudOut.text ?? '').trim()) {
-            await quota.spend(dur)
+            await quota.spend(dur, cloudOut.usage)
             return { ...cloudOut, dur, ms: Date.now() - started, route: 'cloud', localText: out.text }
           }
         } catch (error) {

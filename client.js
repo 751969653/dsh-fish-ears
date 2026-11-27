@@ -44,6 +44,14 @@ window.__ModuleLoader__.load({
     const hint = { opacity: 0.55, fontSize: 12, marginTop: 6 }
     const sectionTitle = { fontSize: 13, fontWeight: 600, margin: '0 0 6px', opacity: 0.9 }
 
+    // 云端按 token 计费，量小时账单里几乎看不见，这里直接把累计值摊在脸上。
+    function formatTokens(n) {
+      const v = Number(n) || 0
+      if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`
+      if (v >= 1000) return `${(v / 1000).toFixed(1)}K`
+      return String(v)
+    }
+
     function Switch({ on, onChange }) {
       return h(
         'button',
@@ -182,7 +190,7 @@ window.__ModuleLoader__.load({
             st?.server?.enabled === false ? '未开启' : `127.0.0.1:${st?.server?.port ?? cfg.serverPort}`
           } ｜ 今天云端：${quota.calls ?? 0}/${quota.callLimit || '∞'} 次、${quota.seconds ?? 0}/${
             quota.secondLimit || '∞'
-          } 秒`,
+          } 秒、${formatTokens(quota.tokens)} tokens`,
         ),
         error ? h('div', { style: { ...box, borderColor: '#e5484d', color: '#e5484d' } }, error) : null,
         state.note ? h('div', { style: { fontSize: 12, opacity: 0.75, marginBottom: 10 } }, state.note) : null,
