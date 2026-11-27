@@ -632,6 +632,7 @@ export function apply(ctx, config) {
         log,
         handlers: {
           status,
+          transcribeSource,
           transcribeWav: async (wavBuf, { need = 'text', prompt } = {}) => {
             const wav = decodeWav(wavBuf)
             const samples = resample(wav.samples, wav.sampleRate)

@@ -1,6 +1,6 @@
 {
   "name": "dsh-fish-ears",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "type": "module",
   "description": "Local-first speech transcription for DSH: bundled ASR engine, optional cloud omni fallback, HTTP endpoint for bridges, and Bilibili video audio.",
   "license": "MIT",
